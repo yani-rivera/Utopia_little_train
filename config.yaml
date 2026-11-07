@@ -1,0 +1,63 @@
+# little_train — a small train travelling a railway line across Honduras, north to south.
+# One train per line in `lines`; swap a line's stations for its digitized GeoJSON when ready.
+
+output: train.html
+
+title: "Still Dreaming of the Train"
+subtitle: "From Squier's interoceanic railway of the 1850s to a fast line from Palmerola to the capital: one dream, drawn again and again"
+
+outline: data/honduras.geojson          # Natural Earth 1:50m (public domain)
+
+lines:
+  # Each line has its own little train. A line is drawn from a digitized GeoJSON LineString
+  # (`geojson`, preferred) or as a smooth curve through its stations. `stop: false` shapes the
+  # curve without a station dot; `label: left` puts a station's name on the left.
+  - id: squier
+    name: "Interoceanic Railway, as Squier drew it (1850s)"
+    color: "#9b3b2a"
+    style: steam
+    first_class: "First class: wifi and AC (a must in Choluteca and on the north coast)"
+    seconds: 16            # one journey, north to south
+    pause_seconds: 2.5     # wait at the Pacific before starting again
+    geojson: null
+    approximate: true
+    note_approximate: "Squier's line is approximate: joined through the towns it passed. It will be redrawn from the georeferenced 1850s map."
+    stations:
+      - {name: "Puerto Cortés", lat: 15.845, lon: -87.940, note: "Caribbean"}
+      - {name: "San Pedro", lat: 15.505, lon: -88.025}
+      - {name: "Lake Yojoa", lat: 14.985, lon: -87.890}
+      - {name: "Comayagua", lat: 14.455, lon: -87.638}
+      - {name: "La Paz", lat: 14.318, lon: -87.678, stop: false}
+      - {name: "Goascorán", lat: 13.601, lon: -87.744}
+      - {name: "Gulf of Fonseca", lat: 13.445, lon: -87.800, note: "Pacific"}
+
+  - id: utopia
+    name: "Palmerola to Campo Marte, my utopia (2026)"
+    color: "#2f6f8f"
+    style: fast
+    scale: 0.55            # a short line at country scale: a smaller train
+    first_class: null
+    seconds: 6             # a fast train
+    pause_seconds: 2
+    geojson: null          # e.g. the terrain-following alignment from the Day 8 least-cost route
+    approximate: true
+    note_approximate: "The Palmerola to Campo Marte line is approximate: joined by Zambrano and Támara. It will be redrawn from the least-cost alignment."
+    stations:
+      - {name: "Palmerola", lat: 14.382, lon: -87.621, label: left}
+      - {name: "Zambrano", lat: 14.273, lon: -87.410, stop: false}
+      - {name: "Támara", lat: 14.163, lon: -87.335, stop: false}
+      - {name: "Campo Marte", lat: 14.090, lon: -87.195, note: "Tegucigalpa"}
+
+labels:
+  north_sea: "Caribbean Sea"
+  south_sea: "Pacific Ocean"
+  credit: "Outline: Natural Earth. Route after E. G. Squier, Map of Honduras and San Salvador showing the line of the proposed Honduras Interoceanic Railway (AGS Library, UWM). Palmerola to Campo Marte: Yanira A. Rivera, #30DayMapChallenge 2026 (Utopia). Map: Yanira A. Rivera."
+
+colors:
+  paper: "#ead9b4"
+  sea: "#9fb3a6"
+  land: "#e3c993"
+  ink: "#3b2a1a"
+  rule: "#8a6a43"
+  rail: "#9b3b2a"
+  train: "#3b2a1a"

@@ -1,0 +1,27 @@
+{
+  "project": "little_train",
+  "script_version": "0.3.0",
+  "created_utc": "2026-11-07T19:12:19+00:00",
+  "python": "3.13.18",
+  "config": "config.yaml",
+  "config_sha256": "a8957882d7e76dee75ff3636451f62af8fd71428c06752eb8fb81899e700d862",
+  "inputs": [
+    {
+      "file": "data/honduras.geojson",
+      "sha256": "d727ee1d2d552895db4989d585a0c33ee0dcbf7fa685e59d37239ab40b3cbdab"
+    }
+  ],
+  "output": "train.html",
+  "lines": [
+    {
+      "id": "squier",
+      "route": "approximate, through stations",
+      "stations": 7
+    },
+    {
+      "id": "utopia",
+      "route": "approximate, through stations",
+      "stations": 4
+    }
+  ]
+}

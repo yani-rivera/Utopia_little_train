@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<style>
+  :root { --paper: __PAPER__; --sea: __SEA__; --land: __LAND__; --ink: __INK__; --rule: __RULE__; --train: __TRAIN__; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--sea); color: var(--ink); }
+  body { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 16px; }
+  svg { display: block; width: 100%; height: auto; }
+  .land { fill: var(--land); stroke: var(--rule); stroke-width: 1; stroke-linejoin: round; }
+  .planned { fill: none; stroke-width: 2; stroke-dasharray: 2 5; stroke-linecap: round; opacity: .75; }
+  .done { fill: none; stroke-width: 3; stroke-linecap: round; }
+  .ties { fill: none; stroke: var(--ink); stroke-width: 7; stroke-dasharray: 1 6; opacity: .5; }
+  .stn circle { fill: var(--paper); stroke: var(--ink); stroke-width: 1.4; transition: fill .4s; }
+  .stn text { font-size: 13px; fill: var(--ink); paint-order: stroke; stroke: var(--land); stroke-width: 3px; }
+  .stn text.sub { font-size: 10.5px; font-style: italic; fill: var(--rule); }
+  .sea-label { font-size: 15px; font-style: italic; letter-spacing: .25em; fill: var(--ink); opacity: .55; text-transform: uppercase; }
+  .smoke { fill: #fffaf0; }
+  .panel { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 16px; margin: 4px 0 10px; }
+  h1 { font-size: clamp(24px, 4.5vw, 34px); font-weight: 400; margin: 0; }
+  .sub { margin: 2px 0 6px; font-style: italic; font-size: 15px; max-width: 62ch; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 14px; }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .legend i { display: inline-block; width: 22px; height: 3px; border-radius: 2px; }
+  button { font: inherit; font-size: 14px; color: var(--ink); background: var(--paper); border: 1px solid var(--rule);
+           padding: 6px 14px; cursor: pointer; border-radius: 2px; }
+  button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .notes { font-size: 12.5px; line-height: 1.45; margin-top: 8px; }
+  .notes p { margin: 0 0 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="panel">
+    <div>
+      <h1>__TITLE__</h1>
+      <p class="sub">__SUBTITLE__</p>
+      <div class="legend">__LEGEND__</div>
+    </div>
+    <button id="play" type="button" aria-pressed="true">Pause</button>
+  </div>
+  <svg id="map" viewBox="0 0 __W__ __H__" role="img" aria-label="__ARIA__">
+    <g>__LAND_PATHS__</g>
+    <text class="sea-label" x="__NSX__" y="__NSY__">__NORTH_SEA__</text>
+    <text class="sea-label" x="__SSX__" y="__SSY__" text-anchor="end">__SOUTH_SEA__</text>
+    __LINES__
+    <g id="smoke"></g>
+    __TRAINS__
+  </svg>
+  <div class="notes">
+    __APPROX_NOTES__
+    <p>__CREDIT__</p>
+    <p>Built with __PROJECT__ v__VERSION__.</p>
+  </div>
+</div>
+<script>
+(() => {
+  const LINES = __LINES_JSON__;
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const smoke = document.getElementById("smoke"), btn = document.getElementById("play");
+  const ease = t => t < .5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;   // slow start, slow arrival
+
+  // per line: its path, length, station positions along it, and its train
+  const lines = LINES.map(c => {
+    const route = document.getElementById(`planned-${c.id}`), done = document.getElementById(`done-${c.id}`);
+    const L = route.getTotalLength();
+    done.style.strokeDasharray = `${L} ${L}`;
+    const samples = Array.from({ length: 500 }, (_, i) => { const s = i / 499 * L, p = route.getPointAtLength(s); return { s, x: p.x, y: p.y }; });
+    const stnAt = c.stations.map(([x, y]) => samples.reduce((b, p) => {
+      const d = (p.x - x) ** 2 + (p.y - y) ** 2; return d < b.d ? { d, s: p.s } : b; }, { d: Infinity, s: 0 }).s);
+    return { ...c, route, done, L, stnAt,
+             stnEls: [...document.querySelectorAll(`#line-${c.id} .stn`)],
+             train: document.getElementById(`train-${c.id}`), body: document.getElementById(`body-${c.id}`), lastPuff: 0 };
+  });
+
+  function place(ln, f) {
+    const s = ease(f) * ln.L, p = ln.route.getPointAtLength(s);
+    const q = ln.route.getPointAtLength(Math.min(ln.L, s + 1)), b = ln.route.getPointAtLength(Math.max(0, s - 1));
+    const a = Math.atan2(q.y - b.y, q.x - b.x) * 180 / Math.PI;
+    const flip = a > 90 || a < -90;                      // keep the little train right side up
+    ln.train.setAttribute("transform", `translate(${p.x},${p.y}) rotate(${a})`);
+    ln.body.setAttribute("transform", flip ? `translate(${-ln.half},7) scale(1,-1)` : `translate(${-ln.half},-7)`);
+    ln.done.style.strokeDashoffset = ln.L - s;
+    ln.stnEls.forEach((el, i) => { el.querySelector("circle").style.fill = s >= ln.stnAt[i] - 2 ? ln.color : ""; });
+    return { p, a, flip };
+  }
+
+  function puff(ln, p, a, flip) {                        // a little cloud from the chimney
+    const r = a * Math.PI / 180, up = flip ? 9 : -9;
+    const cx = p.x + Math.cos(r) * ln.chimney - Math.sin(r) * up, cy = p.y + Math.sin(r) * ln.chimney + Math.cos(r) * up;
+    const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    c.setAttribute("class", "smoke"); c.setAttribute("cx", cx); c.setAttribute("cy", cy); c.setAttribute("r", 2);
+    smoke.appendChild(c);
+    c.animate([{ r: 2, opacity: .9, transform: "translate(0,0)" }, { r: 7, opacity: 0, transform: "translate(6px,-14px)" }],
+              { duration: 1400, easing: "ease-out" }).onfinish = () => c.remove();
+  }
+
+  let playing = !reduce, t0 = null, elapsed = 0;
+  function frame(now) {
+    if (!playing) return;
+    if (t0 === null) t0 = now - elapsed;
+    elapsed = now - t0;
+    for (const ln of lines) {
+      const total = (ln.seconds + ln.pause) * 1000, f = Math.min(1, (elapsed % total) / (ln.seconds * 1000));
+      const { p, a, flip } = place(ln, f);
+      if (ln.smoke && f < 1 && now - ln.lastPuff > 260) { puff(ln, p, a, flip); ln.lastPuff = now; }
+    }
+    requestAnimationFrame(frame);
+  }
+  function setPlaying(on) {
+    playing = on; btn.textContent = on ? "Pause" : "Play"; btn.setAttribute("aria-pressed", String(on));
+    if (on) { t0 = null; requestAnimationFrame(frame); }
+  }
+  btn.addEventListener("click", () => setPlaying(!playing));
+  lines.forEach(ln => place(ln, reduce ? 1 : 0));
+  if (reduce) setPlaying(false); else requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
